@@ -4,6 +4,7 @@ import re
 import tiktoken
 import torch
 from torch.utils.data import Dataset, DataLoader
+import math
 
 
 class Vocab_Generator:
@@ -87,7 +88,7 @@ class DatasetCreator(Dataset):
     # def __getitem__(self,idx):
     #     return self.input_ids[idx], self.target_ids[idx]
     
-def create_dataloader(token_ids, batch_size = 100, max_length = 256, stride = 128, shuffle = True, drop_last=True):
+def create_dataloader(token_ids, batch_size, max_length, stride, shuffle = True, drop_last=True):
     dataset = DatasetCreator(token_ids, max_length, stride)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle,drop_last=drop_last)
     return dataloader
@@ -108,7 +109,12 @@ def main():
         tokenizer = BytePairEncoding()
         ids = tokenizer.encoder(raw_text)
     #print(ids)
-    dataloader = create_dataloader(ids,batch_size=100,max_length=1024,stride=10,shuffle=False)
+    # Compute the Hyperparameter values
+    max_length = 1024
+    overlap_length = 256
+    batch_size = math.floor(len(ids)/(2*max_length-overlap_length))
+    print(batch_size)
+    dataloader = create_dataloader(ids,batch_size,max_length,stride=max_length-overlap_length,shuffle=False)
     #data_iter = iter(dataloader)
     #first_batch = next(data_iter)
     #print(first_batch)
