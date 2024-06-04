@@ -1,6 +1,7 @@
 import os
 import PyPDF2 as pdfreader
 import re
+import tiktoken
 
 class Vocab_Generator:
     
@@ -34,7 +35,7 @@ class Vocab_Generator:
         return vocab
     
 
-class TokenizerV1:
+class SimpleTokenizerV1:
     def __init__(self,vocab):
         self.str_to_int = vocab
         self.int_to_str = {i:s for s,i in vocab.items()} 
@@ -54,6 +55,18 @@ class TokenizerV1:
         text = re.sub(r'\s+([,.?!"()\'])',r'\1',text)
         return text
 
+class BytePairEncoding():
+    def __init__(self):
+        self.tokenizer = tiktoken.get_encoding("gpt2")
+
+    def encoder(self,text):
+        ids = self.tokenizer.encode(text,allowed_special={"<|endoftext|>"})
+        return ids
+    
+    def decoder(self,ids):
+        decoded_text = self.tokenizer.decode(ids)
+        return decoded_text 
+
 def main():
     database_path = "../dataset/"
 
@@ -62,11 +75,16 @@ def main():
     raw_text = vocab_builder.text_extractor(database_path)
     vocab = vocab_builder.vocab_creator(raw_text)
     # Convert tokenized text into Token IDs which is later used to create embeddings
-    tokenizer = TokenizerV1(vocab)
-    ids = tokenizer.encoder(raw_text)
+    token_gen = "BPE"
+    if token_gen == "Simple":
+        tokenizer = SimpleTokenizerV1(vocab)
+        ids = tokenizer.encoder(raw_text)
+    elif token_gen == "BPE":
+        tokenizer = BytePairEncoding()
+        ids = tokenizer.encoder(raw_text)
     print(ids)
 
-    print(tokenizer.decoder(ids))
+    #print(tokenizer.decoder(ids))
 
 
 
