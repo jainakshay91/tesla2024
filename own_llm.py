@@ -2,6 +2,9 @@ import os
 import PyPDF2 as pdfreader
 import re
 import tiktoken
+import torch
+from torch.utils.data import Dataset, DataLoader
+
 
 class Vocab_Generator:
     
@@ -67,6 +70,28 @@ class BytePairEncoding():
         decoded_text = self.tokenizer.decode(ids)
         return decoded_text 
 
+class DatasetCreator(Dataset):
+    def __init__(self, token_ids, max_length, stride):
+        self.input_ids = []
+        self.target_ids = []
+
+        for i in range(0, len(token_ids) - max_length, stride):
+            input_chunk = token_ids[i:i + max_length]
+            output_chunk = token_ids[i + 1: i + max_length + 1]
+            self.input_ids.append(torch.tensor(input_chunk))
+            self.target_ids.append(torch.tensor(output_chunk))
+    
+    # def __len__(self):
+    #     return len(self.input_ids)
+    
+    # def __getitem__(self,idx):
+    #     return self.input_ids[idx], self.target_ids[idx]
+    
+def create_dataloader(token_ids, batch_size = 100, max_length = 256, stride = 128, shuffle = True, drop_last=True):
+    dataset = DatasetCreator(token_ids, max_length, stride)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle,drop_last=drop_last)
+    return dataloader
+
 def main():
     database_path = "../dataset/"
 
@@ -82,8 +107,11 @@ def main():
     elif token_gen == "BPE":
         tokenizer = BytePairEncoding()
         ids = tokenizer.encoder(raw_text)
-    print(ids)
-
+    #print(ids)
+    dataloader = create_dataloader(ids,batch_size=100,max_length=1024,stride=10,shuffle=False)
+    #data_iter = iter(dataloader)
+    #first_batch = next(data_iter)
+    #print(first_batch)
     #print(tokenizer.decoder(ids))
 
 
