@@ -10,7 +10,7 @@ class Vocab_Generator:
     def text_extractor(self,database_path):
         # Text extraction from PDF files 
 
-        text = ' ' # Empty string to hold all the text to be tokenized
+        text = ' ' # Empty string to hold all the text to be tokenized 
         for f in os.listdir(database_path):
             with open(os.path.join(database_path,f),'rb') as pdf_file:
                 try:
@@ -19,15 +19,17 @@ class Vocab_Generator:
                     for page_num in range(len(pdf_read_obj.pages)):
                         page = pdf_read_obj.pages[page_num]
                         text += page.extract_text()
+                        text += "<|endoftext|>" # Add the end of text token 
                 except pdfreader.errors.PdfReadError:
                     print(f)
-                    continue    
+                    continue
         return text
 
     def vocab_creator(self,text):
         preprocessed_text = re.split(r'([,.?_!"()\']|--|\s)',text)
         preprocessed_text = [item.strip() for item in preprocessed_text if item.strip()]
         all_tokens = sorted(list(set(preprocessed_text)))
+        all_tokens.extend(["<|endoftext|>","<|unk|>"])
         vocab = {token:integer for integer,token in enumerate(all_tokens)}
         return vocab
     
@@ -42,6 +44,7 @@ class TokenizerV1:
         #print(text[:99])
         preprocessed_text = re.split(r'([,.?_!"()\']|--|\s)',text)
         preprocessed_text = [item.strip() for item in preprocessed_text if item.strip()]
+        preprocessed_text = [item if item in self.str_to_int else "<|unk|>" for item in preprocessed_text]
         #print(len(preprocessed_text))
         ids = [self.str_to_int[s] for s in preprocessed_text]
         return ids
@@ -52,7 +55,7 @@ class TokenizerV1:
         return text
 
 def main():
-    database_path = "./dataset/"
+    database_path = "../dataset/"
 
     # Create the vocabulary after tokenizing the entire text
     vocab_builder = Vocab_Generator()
@@ -63,7 +66,7 @@ def main():
     ids = tokenizer.encoder(raw_text)
     print(ids)
 
-    #print(tokenizer.decoder(ids))
+    print(tokenizer.decoder(ids))
 
 
 
